@@ -1,0 +1,415 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master I-Card Designer Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Roboto:wght@400;700&family=Montserrat:wght@400;800&family=Open+Sans:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <style id="dynamic-styles">
+        :root {
+            /* Default Theme Colors */
+            --primary: #1e3a8a;
+            --accent: #b45309;
+            --card-border: #1e293b;
+            --card-text: #1e293b;
+            --badge-bg: #1e3a8a;
+            --badge-text: #ffffff;
+            --footer-bg: #f8fafc;
+            --card-font-family: 'Poppins', sans-serif;
+            
+            /* Sidebar/UI Colors */
+            --sidebar-bg: #0f172a;
+            --card-w: 95mm;
+            --card-h: 62mm;
+            --page-w: 210mm;
+            --page-h: 297mm;
+        }
+
+        @page { size: A4; margin: 0; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #cbd5e1;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 350px; background: var(--sidebar-bg); color: white;
+            padding: 15px; height: 100vh; overflow-y: auto;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.3); flex-shrink: 0;
+            z-index: 2000;
+        }
+
+        .sidebar h2 { font-size: 16px; color: #fbbf24; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; }
+
+        .control-panel {
+            background: #1e293b; padding: 12px; border-radius: 8px; margin-bottom: 15px;
+            border: 1px solid #334155;
+        }
+
+        .control-panel label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 5px; margin-top: 10px;}
+
+        input, select {
+            width: 100%; padding: 8px; background: #0f172a; color: white;
+            border: 1px solid #334155; border-radius: 4px; font-size: 12px;
+        }
+
+        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .color-input-wrapper { display: flex; align-items: center; gap: 5px; background: #0f172a; padding: 5px; border-radius: 4px; }
+        input[type="color"] { width: 30px; height: 30px; border: none; padding: 0; cursor: pointer; background: none; }
+
+        .home-link { position: fixed; top: 15px; left: 55%; transform: translateX(-50%); z-index: 5000; text-decoration: none; }
+        .hitesh-btn { background: #fbbf24; color: #000; padding: 8px 20px; border-radius: 50px; font-weight: 800; font-size: 12px; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        /* --- MAIN VIEWPORT --- */
+        .viewport { flex-grow: 1; display: flex; height: 100vh; overflow: hidden; }
+
+        .preview-area {
+            flex: 2.5; padding: 60px 20px 20px 20px; overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center;
+            border-right: 2px solid #94a3b8; scroll-behavior: smooth;
+        }
+
+        .a4-page {
+            width: var(--page-w); min-height: var(--page-h); background: white; margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 10mm 5mm; box-sizing: border-box;
+            display: grid; grid-template-columns: repeat(2, var(--card-w)); gap: 4mm 6mm;
+            justify-content: center; page-break-after: always;
+        }
+
+        .excel-view { flex: 1.2; background: white; padding: 15px; overflow: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border: 1px solid #e2e8f0; padding: 6px; text-align: left; }
+
+        /* --- CARD DESIGN --- */
+        .card {
+            width: var(--card-w); height: var(--card-h); background: white;
+            border-radius: 10px; border: 2.5px solid var(--card-border);
+            position: relative; overflow: hidden; font-family: var(--card-font-family);
+        }
+
+        .header {
+            height: 70px; background: white; display: flex; align-items: center;
+            padding: 0 10px; border-bottom: 3px solid var(--primary);
+        }
+
+        .school-logo-img { width: 55px; height: 55px; object-fit: contain; }
+        .header-text { flex-grow: 1; text-align: center; }
+        .school-name { font-weight: 800; color: var(--primary); margin: 0; text-transform: uppercase; line-height: 1.2; }
+        .city-name { font-size: 18px; font-weight: 800; color: var(--accent); margin: 0; letter-spacing: 4px; line-height: 1;}
+
+        .body-content { padding: 10px 15px; position: relative; height: 100px; }
+        .pass-badge {
+            display: inline-block; background: var(--badge-bg); color: var(--badge-text);
+            padding: 2px 18px; border-radius: 50px; font-size: 11px;
+            font-weight: 600; margin-bottom: 5px; position: relative; left: 50%; transform: translateX(-50%);
+        }
+
+        .details { 
+            position: relative; z-index: 10; font-size: 20px; font-weight: 700; 
+            color: var(--card-text); line-height: 1.6; padding-right: 90px; 
+        }
+        .label { color: #64748b; font-size: 13px; width: 80px; display: inline-block; font-weight: 600; }
+
+        .character-img { position: absolute; right: 5px; top: 12px; height: 125px; z-index: 15; mix-blend-mode: multiply; }
+
+        .footer {
+            position: absolute; bottom: 0; width: 100%; height: 50px;
+            background: var(--footer-bg); border-top: 1px dashed #cbd5e1;
+            display: flex; justify-content: space-between; align-items: flex-end; 
+            padding: 0 15px 8px 15px; box-sizing: border-box;
+        }
+        .footer span { font-weight: 800; font-size: 14px; }
+        .f-prin { color: var(--primary); }
+        .f-type { color: var(--accent); margin-right: 15px; }
+
+        /* --- PRINT --- */
+        @media print {
+            .sidebar, .excel-view, .home-link { display: none !important; }
+            .viewport { display: block; overflow: visible; width: 100%; }
+            body { background: white; height: auto; }
+            .preview-area { padding: 0; margin: 0; overflow: visible; display: block; }
+            .a4-page { box-shadow: none; margin: 0; border: none; padding: 10mm 5mm; }
+            .card { box-shadow: none; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="https://hiteshdesk.blogspot.com" target="_blank" class="home-link">
+        <div class="hitesh-btn">🏠 HiteshDesk Home</div>
+    </a>
+
+    <div class="sidebar">
+        <h2>I-Card Master Designer</h2>
+        
+        <!-- Themes -->
+        <div class="control-panel">
+            <label>1. Select Predefined Theme</label>
+            <select id="theme_selector" onchange="applyTheme(this.value)">
+                <option value="classic">Classic Navy (Default)</option>
+                <option value="royal">Royal Maroon</option>
+                <option value="emerald">Emerald Green</option>
+                <option value="midnight">Midnight Black</option>
+                <option value="slate">Slate Gray</option>
+                <option value="sunset">Sunset Orange</option>
+                <option value="ocean">Deep Ocean Blue</option>
+                <option value="lavender">Modern Purple</option>
+                <option value="gold">Luxury Gold & Black</option>
+                <option value="forest">Forest Green</option>
+                <option value="crimson">Crimson Red</option>
+                <option value="teal">Cyber Teal</option>
+                <option value="chocolate">Earth Brown</option>
+                <option value="rose">Soft Rose</option>
+                <option value="cyan">Bright Cyan</option>
+            </select>
+        </div>
+
+        <!-- Manual Colors -->
+        <div class="control-panel">
+            <label>2. Custom Color Palette</label>
+            <div class="color-grid">
+                <div class="color-input-wrapper"><input type="color" id="col_primary" onchange="updateStyle()"> <span>Header</span></div>
+                <div class="color-input-wrapper"><input type="color" id="col_accent" onchange="updateStyle()"> <span>Accent</span></div>
+                <div class="color-input-wrapper"><input type="color" id="col_text" onchange="updateStyle()"> <span>Text</span></div>
+                <div class="color-input-wrapper"><input type="color" id="col_border" onchange="updateStyle()"> <span>Border</span></div>
+                <div class="color-input-wrapper"><input type="color" id="col_badge" onchange="updateStyle()"> <span>Badge</span></div>
+            </div>
+        </div>
+
+        <!-- Font Style -->
+        <div class="control-panel">
+            <label>3. Typography Settings</label>
+            <select id="font_family" onchange="updateStyle()">
+                <option value="'Poppins', sans-serif">Poppins (Modern)</option>
+                <option value="'Roboto', sans-serif">Roboto (Clean)</option>
+                <option value="'Montserrat', sans-serif">Montserrat (Bold)</option>
+                <option value="'Open Sans', sans-serif">Open Sans (Classic)</option>
+                <option value="'Playfair Display', serif">Playfair (Elegant)</option>
+            </select>
+            <label>School Font Size:</label>
+            <input type="range" id="font_slider" min="8" max="25" value="11" oninput="updateStyle()">
+        </div>
+
+        <!-- Card Size -->
+        <div class="control-panel">
+            <label>4. Card Dimensions</label>
+            <label>Width (mm):</label>
+            <input type="range" id="card_w_slider" min="85" max="105" value="95" oninput="updateStyle()">
+            <label>Height (mm):</label>
+            <input type="range" id="card_h_slider" min="55" max="75" value="62" oninput="updateStyle()">
+        </div>
+
+        <!-- Data & Logos -->
+        <div class="control-panel">
+            <label>5. Upload Logos</label>
+            <input type="file" onchange="loadLogo(event, 'school')" title="School Logo">
+            <input type="file" onchange="loadLogo(event, 'boy')" title="Boy Image">
+            <input type="file" onchange="loadLogo(event, 'girl')" title="Girl Image">
+            
+            <label style="margin-top:15px;">6. Excel Data Source</label>
+            <input type="file" id="excel_file" accept=".xlsx, .xls">
+            <select id="sheet_list" onchange="changeSheet()" style="margin-top:5px;"></select>
+        </div>
+
+        <!-- Branding Presets -->
+        <div class="control-panel">
+            <label>7. School Name & City</label>
+            <input type="text" id="manual_school" value="ADARSH VIDYA NIKETAN SR. SEC. SCHOOL" oninput="updateCardsLive()">
+            <input type="text" id="manual_city" value="PILANI" oninput="updateCardsLive()" style="margin-top:5px;">
+        </div>
+        
+        <button class="print-btn" onclick="window.print()">Print Cards</button>
+    </div>
+
+    <div class="viewport">
+        <div class="preview-area" id="page-container">
+            <div style="color: #64748b; margin-top: 150px; text-align: center;">
+                <h3>एक्सेल फाइल अपलोड करें और डिज़ाइन शुरू करें</h3>
+            </div>
+        </div>
+
+        <div class="excel-view">
+            <h3>Sheet Explorer</h3>
+            <div id="excel_table_container"></div>
+        </div>
+    </div>
+
+    <script>
+        let workbook = null, currentData = [];
+        let logos = {
+            school: "https://raw.githubusercontent.com/hiteshjangir8057/Adarsh-Pilani-id-Card-Logo/refs/heads/main/Adarsh%20logo.png",
+            boy: "https://raw.githubusercontent.com/hiteshjangir8057/Adarsh-Pilani-id-Card-Logo/refs/heads/main/Boy%20Logo.png",
+            girl: "https://raw.githubusercontent.com/hiteshjangir8057/Adarsh-Pilani-id-Card-Logo/refs/heads/main/Girl%20Logo.png"
+        };
+
+        const themes = {
+            classic:  { pri: '#1e3a8a', acc: '#b45309', txt: '#1e293b', bor: '#1e293b', bdg: '#1e3a8a' },
+            royal:    { pri: '#7f1d1d', acc: '#d97706', txt: '#450a0a', bor: '#7f1d1d', bdg: '#7f1d1d' },
+            emerald:  { pri: '#064e3b', acc: '#059669', txt: '#064e3b', bor: '#064e3b', bdg: '#065f46' },
+            midnight: { pri: '#000000', acc: '#4b5563', txt: '#000000', bor: '#000000', bdg: '#111827' },
+            slate:    { pri: '#334155', acc: '#64748b', txt: '#1e293b', bor: '#334155', bdg: '#475569' },
+            sunset:   { pri: '#c2410c', acc: '#ea580c', txt: '#7c2d12', bor: '#c2410c', bdg: '#ea580c' },
+            ocean:    { pri: '#0c4a6e', acc: '#0284c7', txt: '#0c4a6e', bor: '#0c4a6e', bdg: '#075985' },
+            lavender: { pri: '#581c87', acc: '#9333ea', txt: '#3b0764', bor: '#581c87', bdg: '#6b21a8' },
+            gold:     { pri: '#000000', acc: '#a16207', txt: '#000000', bor: '#a16207', bdg: '#a16207' },
+            forest:   { pri: '#14532d', acc: '#16a34a', txt: '#064e3b', bor: '#14532d', bdg: '#15803d' },
+            crimson:  { pri: '#991b1b', acc: '#ef4444', txt: '#7f1d1d', bor: '#991b1b', bdg: '#b91c1c' },
+            teal:     { pri: '#134e4a', acc: '#0d9488', txt: '#134e4a', bor: '#134e4a', bdg: '#115e59' },
+            chocolate:{ pri: '#451a03', acc: '#92400e', txt: '#451a03', bor: '#451a03', bdg: '#78350f' },
+            rose:     { pri: '#831843', acc: '#db2777', txt: '#831843', bor: '#831843', bdg: '#9d174d' },
+            cyan:     { pri: '#164e63', acc: '#0891b2', txt: '#164e63', bor: '#164e63', bdg: '#155e75' }
+        };
+
+        function applyTheme(key) {
+            const t = themes[key];
+            document.getElementById('col_primary').value = t.pri;
+            document.getElementById('col_accent').value = t.acc;
+            document.getElementById('col_text').value = t.txt;
+            document.getElementById('col_border').value = t.bor;
+            document.getElementById('col_badge').value = t.bdg;
+            updateStyle();
+        }
+
+        function updateStyle() {
+            const root = document.documentElement;
+            root.style.setProperty('--primary', document.getElementById('col_primary').value);
+            root.style.setProperty('--accent', document.getElementById('col_accent').value);
+            root.style.setProperty('--card-text', document.getElementById('col_text').value);
+            root.style.setProperty('--card-border', document.getElementById('col_border').value);
+            root.style.setProperty('--badge-bg', document.getElementById('col_badge').value);
+            root.style.setProperty('--card-font-family', document.getElementById('font_family').value);
+            root.style.setProperty('--card-w', document.getElementById('card_w_slider').value + 'mm');
+            root.style.setProperty('--card-h', document.getElementById('card_h_slider').value + 'mm');
+            updateCardsLive();
+        }
+
+        function loadLogo(e, type) {
+            const file = e.target.files[0];
+            if(file) { logos[type] = URL.createObjectURL(file); updateCardsLive(); }
+        }
+
+        function splitInfo(raw) {
+            if (!raw) return { cls: "N/A", sec: "N/A" };
+            let str = raw.toString().toUpperCase().trim();
+            let medium = str.includes("ENGLISH") ? "EM" : (str.includes("HINDI") ? "HM" : "");
+            let house = "";
+            ["SUN", "MOON", "STAR"].forEach(h => { if (str.includes(h)) house = h; });
+            let stream = "";
+            if (str.includes("NON MED")) stream = "NON MED";
+            else if (str.includes("MED")) stream = "MED";
+            else if (str.includes("ART")) stream = "ART";
+            let base = str.split(" ")[0]; 
+            return {
+                cls: base + (stream ? " " + stream : ""),
+                sec: [medium, house].filter(x => x).join("-") || "N/A"
+            };
+        }
+
+        document.getElementById('excel_file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                workbook = XLSX.read(data, {type: 'array'});
+                const dropdown = document.getElementById('sheet_list');
+                dropdown.innerHTML = "";
+                workbook.SheetNames.forEach(name => {
+                    let opt = document.createElement('option');
+                    opt.value = name; opt.innerText = name;
+                    dropdown.appendChild(opt);
+                });
+                changeSheet();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function changeSheet() {
+            const sheetName = document.getElementById('sheet_list').value;
+            const sheet = workbook.Sheets[sheetName];
+            currentData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+            renderExcelTable(currentData);
+            updateCardsLive();
+        }
+
+        function renderExcelTable(data) {
+            const container = document.getElementById('excel_table_container');
+            let html = "<table><thead><tr>";
+            Object.keys(data[0]).forEach(k => html += `<th>${k}</th>`);
+            html += "</tr></thead><tbody>";
+            data.forEach(row => {
+                html += "<tr>";
+                Object.values(row).forEach(v => html += `<td>${v}</td>`);
+                html += "</tr>";
+            });
+            html += "</tbody></table>";
+            container.innerHTML = html;
+        }
+
+        function updateCardsLive() {
+            const container = document.getElementById('page-container');
+            const school = document.getElementById('manual_school').value;
+            const city = document.getElementById('manual_city').value;
+            const fontSize = document.getElementById('font_slider').value;
+            if (currentData.length === 0) return;
+            container.innerHTML = "";
+            let allCards = [];
+            currentData.forEach(row => {
+                const keys = Object.keys(row);
+                const classKey = keys.find(k => k.toUpperCase() === "CLASS");
+                const sectionKey = keys.find(k => k.toUpperCase() === "SECTION");
+                let fCls = "", fSec = "";
+                if (classKey && sectionKey) { fCls = row[classKey]; fSec = row[sectionKey]; }
+                else if (classKey) { const p = splitInfo(row[classKey]); fCls = p.cls; fSec = p.sec; }
+                if (fCls) {
+                    allCards.push(buildCardHTML(fCls, fSec, "BOY", school, city, fontSize));
+                    allCards.push(buildCardHTML(fCls, fSec, "GIRL", school, city, fontSize));
+                }
+            });
+            for (let i = 0; i < allCards.length; i += 8) {
+                let page = document.createElement('div');
+                page.className = 'a4-page';
+                page.innerHTML = allCards.slice(i, i + 8).join("");
+                container.appendChild(page);
+            }
+        }
+
+        function buildCardHTML(cls, sec, type, school, city, fSize) {
+            const charImg = type === "BOY" ? logos.boy : logos.girl;
+            return `
+                <div class="card">
+                    <div class="header">
+                        <img class="school-logo-img" src="${logos.school}">
+                        <div class="header-text">
+                            <h1 class="school-name" style="font-size:${fSize}px">${school}</h1>
+                            <h2 class="city-name">${city}</h2>
+                        </div>
+                    </div>
+                    <div class="body-content">
+                        <div class="pass-badge">STUDENT OUT PASS</div>
+                        <div class="details">
+                            <div><span class="label">CLASS</span> : ${cls}</div>
+                            <div><span class="label">SECTION</span> : ${sec}</div>
+                        </div>
+                        <img class="character-img" src="${charImg}">
+                    </div>
+                    <div class="footer">
+                        <span class="f-prin">PRINCIPAL</span>
+                        <span class="f-type">${type}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Init
+        applyTheme('classic');
+    </script>
+</body>
+</html>
