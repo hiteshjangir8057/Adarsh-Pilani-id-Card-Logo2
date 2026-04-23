@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master I-Card Pro - Signature & Smart Section</title>
+    <title>Master I-Card Pro - Combined Text & Undo</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Roboto:wght@400;700&family=Montserrat:wght@400;800&family=Open+Sans:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
@@ -100,7 +100,7 @@
         .sig-img { width: 100%; pointer-events: none; }
 
         .footer { position: absolute; bottom: 0; width: 100%; height: 50px; background: var(--footer-bg); border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 15px 8px 15px; box-sizing: border-box; }
-        .footer-left { position: relative; } /* Wrapper for Principal and Sig */
+        .footer-left { position: relative; } 
         .footer span { font-weight: 800; font-size: 14px; color: var(--primary); }
 
         .print-container { position: fixed; bottom: 0; left: 0; width: 350px; padding: 20px; background: var(--sidebar-bg); border-top: 1px solid #334155; z-index: 3000; }
@@ -129,16 +129,14 @@
 
         <div class="control-panel">
             <span class="section-title">2. Principal Signature Control</span>
-            <label>Sig Size:</label>
+            <label>Size / Up-Down / Left-Right:</label>
             <input type="range" id="sig_size" min="30" max="150" value="60" oninput="updateStyle()">
-            <label>Sig Up/Down:</label>
             <input type="range" id="sig_top" min="-100" max="50" value="-30" oninput="updateStyle()">
-            <label>Sig Left/Right:</label>
             <input type="range" id="sig_left" min="-50" max="100" value="20" oninput="updateStyle()">
         </div>
 
         <div class="control-panel">
-            <span class="section-title">3. Boy/Girl Image Global</span>
+            <span class="section-title">3. Character Global Position</span>
             <label>Boy: Size/Top/Right</label>
             <input type="range" id="boy_size" min="50" max="200" value="125" oninput="updateStyle()">
             <input type="range" id="boy_top" min="-50" max="100" value="12" oninput="updateStyle()">
@@ -150,8 +148,8 @@
         </div>
 
         <div class="control-panel">
-            <span class="section-title">4. Upload Photos & Signature</span>
-            <label>Signature (PNG):</label><input type="file" onchange="loadLogo(event, 'signature')">
+            <span class="section-title">4. Uploads</span>
+            <label>Signature PNG:</label><input type="file" onchange="loadLogo(event, 'signature')">
             <label>School Logo:</label><input type="file" onchange="loadLogo(event, 'school')">
             <label>Boy Logo:</label><input type="file" onchange="loadLogo(event, 'boy')">
             <label>Girl Logo:</label><input type="file" onchange="loadLogo(event, 'girl')">
@@ -164,14 +162,20 @@
         </div>
 
         <div class="control-panel">
-            <span class="section-title">6. Manual Edit</span>
+            <span class="section-title">6. Footer & Manual Edit</span>
+            <label>Footer Text Mode:</label>
+            <select id="footer_mode" onchange="updateCardsLive()">
+                <option value="individual">Individual (Boy/Girl)</option>
+                <option value="combined">Combined (BOY & GIRL)</option>
+            </select>
+            <label style="margin-top:8px;">School / City Name:</label>
             <input type="text" id="manual_school" value="ADARSH VIDYA NIKETAN SR. SEC. SCHOOL" oninput="updateCardsLive()">
             <input type="text" id="manual_city" value="PILANI" oninput="updateCardsLive()" style="margin-top:5px;">
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <input type="number" id="qty_boy" value="1" oninput="updateCardsLive()" title="Default Boy">
                 <input type="number" id="qty_girl" value="1" oninput="updateCardsLive()" title="Default Girl">
             </div>
-            <p style="font-size: 9px; color: #fbbf24; margin-top:5px;">Section N/A hatakar blank kar diya gaya hai.</p>
+            <p style="font-size: 9px; color: #fbbf24; margin-top:5px;">Undo: Ctrl + Z | Blank Section: Checked.</p>
         </div>
     </div>
 
@@ -195,13 +199,15 @@
             school: "https://raw.githubusercontent.com/hiteshjangir8057/Adarsh-Pilani-id-Card-Logo/refs/heads/main/Adarsh%20logo.png",
             boy: "https://raw.githubusercontent.com/hiteshjangir8057/Adarsh-Pilani-id-Card-Logo/refs/heads/main/Boy%20Logo.png",
             girl: "https://raw.githubusercontent.com/hiteshjangir8057/Adarsh-Pilani-id-Card-Logo/refs/heads/main/Girl%20Logo.png",
-            signature: "" // Blank by default
+            signature: "" 
         };
 
+        // --- Ctrl + Z Undo Logic ---
         window.addEventListener('keydown', e => {
             if (e.ctrlKey && e.key === 'z' && deletedCardsStack.length > 0) {
                 const id = deletedCardsStack.pop();
-                document.getElementById(id).style.display = "block";
+                const el = document.getElementById(id);
+                if(el) el.style.display = "block";
             }
         });
 
@@ -225,7 +231,6 @@
             root.style.setProperty('--girl-top', document.getElementById('girl_top').value + 'px');
             root.style.setProperty('--girl-right', document.getElementById('girl_right').value + 'px');
 
-            // Signature Props
             root.style.setProperty('--sig-size', document.getElementById('sig_size').value + 'px');
             root.style.setProperty('--sig-top', document.getElementById('sig_top').value + 'px');
             root.style.setProperty('--sig-left', document.getElementById('sig_left').value + 'px');
@@ -282,6 +287,7 @@
             const container = document.getElementById('page-container');
             const school = document.getElementById('manual_school').value;
             const city = document.getElementById('manual_city').value;
+            const footerMode = document.getElementById('footer_mode').value;
             const defB = parseInt(document.getElementById('qty_boy').value) || 0;
             const defG = parseInt(document.getElementById('qty_girl').value) || 0;
 
@@ -297,11 +303,11 @@
                 let bQty = bKey ? (row[bKey] === "" ? 0 : parseInt(row[bKey]) || 0) : defB;
                 let gQty = gKey ? (row[gKey] === "" ? 0 : parseInt(row[gKey]) || 0) : defG;
 
-                let cls = row[keys.find(k => k.toUpperCase() === "CLASS")] || ""; // Removed N/A
-                let sec = row[keys.find(k => k.toUpperCase() === "SECTION")] || ""; // Removed N/A
+                let cls = row[keys.find(k => k.toUpperCase() === "CLASS")] || ""; 
+                let sec = row[keys.find(k => k.toUpperCase() === "SECTION")] || ""; 
 
-                for(let i=0; i<bQty; i++) cards.push(buildHTML(cls, sec, "BOY", school, city, rIdx, i, 'B'));
-                for(let i=0; i<gQty; i++) cards.push(buildHTML(cls, sec, "GIRL", school, city, rIdx, i, 'G'));
+                for(let i=0; i<bQty; i++) cards.push(buildHTML(cls, sec, "BOY", school, city, rIdx, i, 'B', footerMode));
+                for(let i=0; i<gQty; i++) cards.push(buildHTML(cls, sec, "GIRL", school, city, rIdx, i, 'G', footerMode));
             });
 
             for (let i = 0; i < cards.length; i += 8) {
@@ -312,8 +318,10 @@
             }
         }
 
-        function buildHTML(cls, sec, type, school, city, rIdx, cIdx, gCode) {
+        function buildHTML(cls, sec, type, school, city, rIdx, cIdx, gCode, footerMode) {
             const id = `c-${rIdx}-${gCode}-${cIdx}`;
+            const footerText = footerMode === 'combined' ? 'BOY & GIRL' : type;
+
             return `
                 <div class="card" id="${id}">
                     <div class="card-tools"><button class="tool-btn" onclick="removeCard('${id}')">X</button></div>
@@ -333,7 +341,7 @@
                             </div>
                             <span>PRINCIPAL</span>
                         </div>
-                        <span style="color:var(--accent); font-weight:800;">${type}</span>
+                        <span style="color:var(--accent); font-weight:800;">${footerText}</span>
                     </div>
                 </div>`;
         }
